@@ -1,92 +1,110 @@
-# User Management and Authentication System
+# User Management & Authentication System
 
-## Overview
-Handles all operations related to user registration, authentication, profile management, and access control to ensure secure and authorized access.
+A premium, production-grade User Management and Authentication System built with a **FastAPI** backend and a **Next.js** frontend. It features secure JWT-based sessions, stateful token invalidation on logout, OTP verification, and role-based access control.
 
-## Backend
-- **Language**: Python
-- **Framework**: FastAPI
-- **Database**: PostgreSQL
-- **Containerization**: Docker Compose
+---
 
-## Frontend
-- **Framework**: Next.js
-  
+## Technical Stack
+
+### Backend
+- **Framework**: FastAPI (Python)
+- **Database**: PostgreSQL (Production) / SQLite (Local Development)
+- **ORM**: SQLModel / SQLAlchemy
+- **Authentication**: JWT, bcrypt, stateful `AuthToken` tracking
+- **Messaging**: Mocked Email (SMTP) & SMS (WhatsApp API) gateways for easy local development
+
+### Frontend
+- **Framework**: Next.js 14 (React)
+- **Styling**: TailwindCSS & Lucide Icons
+- **Middleware**: Edge Runtime-compatible route protection
+
+---
+
 ## Features
-- User registration and login
-- OAuth authorization
-- Token management
-- Profile creation and updating
-- Password reset and email/phone verification
-- Secure access control
+- **Instant Local Registration & Login**: Users registered in local SQLite mode are automatically verified.
+- **Role-Based Access**: Dedicated routes and views for Students, Teachers, and Admins.
+- **Stateful JWT Blacklist**: Logging out invalidates active tokens in the database, preventing session replay.
+- **Secure Credentials**: Direct `bcrypt` password hashing (passlib-free) for Python 3.12 compatibility.
+- **Premium Glassmorphic UI**: Beautiful dark-themed landing pages and dashboard control centers.
 
+---
 
-## Getting Started
+## Local Development Guide
 
-### Prerequisites
-Make sure you have the following installed on your machine:
-- [Docker](https://www.docker.com/get-started)
-- [Docker Compose](https://docs.docker.com/compose/install/)
+### 1. Prerequisites
+- **Python**: version `3.11` or `3.12`
+- **Node.js**: version `18` or `20`
+- **Poetry**: Python dependency manager
 
-### Steps to Run the Project
+---
 
-1. **Clone the Repository**
-   - The repository link can be found in the group description(Group name: "Panaversity Working KHI"). Use the link to clone the repository and open terminal inside that folder:
+### 2. Backend Setup
+
+1. Navigate to the `back-end/user-service` folder:
    ```bash
-   git clone <repository-url>
-   cd <repository-name>
+   cd back-end/user-service
    ```
-
-2. **Set Up Environment Variables**
-   - **Frontend**:
-       1. Navigate to the `front-end` folder.
-       2. Create a `.env.local` file by:
-          - Copying the contents of `.env.example`.
-          - Ensuring that `.env.local` is placed inside the `front-end` folder, in the same location as `.env.example`.
-
-   - **Backend**:
-       1. Navigate to the `back-end/user-service` folder.
-       2. Download the `.env` file from the Google Drive link provided in your group description (Group name: "Panaversity Working KHI") and place it in the `back-end/user-service` directory.
-       3. Rename the file:
-          - If the filename appears as `env`, rename it to `.env` after downloading, as it might download without the leading dot.
-
-
-3. **Build and Run Docker Containers**
-   From the root project directory, run:
+2. Install python dependencies:
+   ```bash
+   poetry install
    ```
-   docker-compose up -d --build
+3. Copy environment variables (a pre-configured `.env` is supplied in the workspace for SQLite fallback):
+   ```bash
+   # Make sure `.env` exists in back-end/user-service/
    ```
+4. Run the backend development server:
+   ```bash
+   poetry run uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+   ```
+   - **Interactive Swagger Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+   - **Alternative ReDoc UI**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 
-4. **Frontend Installation**
-   - Navigate to `front-end` folder
-   - Open terminal and run: 
-      ```
-      npm install
-      ```
-      This command will install all the necessary packages.
-   - After the installation is complete, run:
-      ```
-      npm run dev
-      ```
-      This will start the development server.
+---
 
+### 3. Frontend Setup
 
-5. **Access the Application**
-   - **Frontend**: Open your browser and navigate to `http://localhost:3000` 
-   - **Backend**: For API access, go to `http://localhost:8000`
+1. Navigate to the `front-end` folder:
+   ```bash
+   cd ../../front-end
+   ```
+2. Install npm dependencies:
+   ```bash
+   npm install
+   ```
+3. Verify your `.env.local` contains:
+   ```env
+   BACKEND_AUTH_SERVER_URL="http://localhost:8000"
+   ```
+4. Run the frontend development server:
+   ```bash
+   npm run dev
+   ```
+   - **Landing Page**: [http://localhost:3000](http://localhost:3000)
+   - **Login**: [http://localhost:3000/login](http://localhost:3000/login)
+   - **Admin Control Center**: [http://localhost:3000/admin](http://localhost:3000/admin)
 
+---
 
-6. **Updating Code**
-   If you pull any new code from GitHub while the project is running or already build:
-   - You can either rerun the build command to ensure all changes are reflected:
-     ```
-     docker-compose up -d --build
-     ```
-   - Or, open the development containers for both the `user-service` and `frontend` containers to see the changes live.
-   
+## Running Verification & Tests
 
-7. **Create and Manage Users**
-   You can now register `http://localhost:3000/register`, log in `http://localhost:3000/login`, and manage users through the frontend interface.
+### Backend Unit Tests
+Run the pytest suite to check registration, unverified login blocks, verification tokens, and session blacklists:
+```bash
+cd back-end/user-service
+poetry run pytest
+```
 
-## License
-- This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+### Frontend TypeScript/Lint Compilation
+Verify the frontend compiles without type errors:
+```bash
+cd front-end
+npm run build
+```
+
+---
+
+## Running with Docker (Alternative)
+To containerize the service using Docker Compose:
+```bash
+docker-compose up -d --build
+```

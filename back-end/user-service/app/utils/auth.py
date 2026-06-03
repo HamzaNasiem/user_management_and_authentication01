@@ -1,26 +1,31 @@
 #auth.py
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from sqlmodel import Session, select
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from app.models.user import User
+from app.models.auth_token import AuthToken
 from app.database import get_session
 from app.settings import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from app.services.whatsapp_message import send_whatsapp_message
 import hashlib
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/user/login")
 
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    except Exception:
+        return False
 
 
-def hash_password(password):
-    return pwd_context.hash(password)
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -58,6 +63,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
             raise credentials_exception
     except JWTError:
         raise credentials_exception
+
+    # Check if the token is valid/active in the DB
+    db_token = session.exec(select(AuthToken).where(
+        (AuthToken.token_value == token) & 
+        (AuthToken.used_at == None)
+    )).first()
+    if not db_token:
+        raise credentials_exception
+
     user = session.exec(select(User).where(User.email == email)).first()
     if user is None:
         raise credentials_exception

@@ -1,22 +1,29 @@
-// import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import { RotateCcwIcon } from 'lucide-react';
 import clsx from 'clsx';
 import Image from 'next/image';
 import { lusitana } from '../../ui/fonts';
-import { LatestInvoice } from '../../lib/definitions';
-// import { fetchLatestInvoices } from '@/src/app/admin/lib/data';
+import placeholderData from '@/src/components/admin/lib/placeholder-data';
+
 export default async function LatestInvoices() {
-  // const latestInvoices = await fetchLatestInvoices();
+  const latestInvoices = placeholderData.invoices.slice(0, 5).map((invoice) => {
+    const customer = placeholderData.customers.find((c) => c.id === invoice.customer_id);
+    return {
+      id: invoice.customer_id + invoice.date,
+      name: customer ? customer.name : 'Unknown',
+      email: customer ? customer.email : '',
+      image_url: customer ? customer.image_url : '/customers/placeholder.png',
+      amount: '$' + (invoice.amount / 100).toFixed(2)
+    };
+  });
+
   return (
     <div className="flex w-full flex-col md:col-span-4">
       <h2 className={`${lusitana.className} mb-4 text-xl md:text-2xl`}>
-        Progress
+        Latest Invoices
       </h2>
       <div className="flex grow flex-col justify-between rounded-xl bg-gray-50 p-4">
-        {/* NOTE: comment in this code when you get to this point in the course */}
-
         <div className="bg-white px-6">
-          {/* {latestInvoices.map((invoice, i) => {
+          {latestInvoices.map((invoice, i) => {
             return (
               <div
                 key={invoice.id}
@@ -28,13 +35,9 @@ export default async function LatestInvoices() {
                 )}
               >
                 <div className="flex items-center">
-                  <Image
-                    src={invoice.image_url}
-                    alt={`${invoice.name}'s profile picture`}
-                    className="mr-4 rounded-full"
-                    width={32}
-                    height={32}
-                  />
+                  <div className="relative mr-4 h-8 w-8 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center font-bold text-xs text-gray-500 border">
+                    {invoice.name[0]}
+                  </div>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold md:text-base">
                       {invoice.name}
@@ -51,10 +54,10 @@ export default async function LatestInvoices() {
                 </p>
               </div>
             );
-          })} */}
+          })}
         </div>
         <div className="flex items-center pb-2 pt-6">
-          <RotateCcwIcon className="h-5 w-5 text-gray-500" />
+          <RotateCcwIcon className="h-5 w-5 text-gray-500 animate-spin-slow" />
           <h3 className="ml-2 text-sm text-gray-500 ">Updated just now</h3>
         </div>
       </div>

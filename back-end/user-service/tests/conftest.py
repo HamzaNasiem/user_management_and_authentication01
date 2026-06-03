@@ -13,11 +13,17 @@ def engine():
     Yields:
         engine: A SQLAlchemy engine object.
     """
-    connection_string = str(settings.TEST_DATABASE_URL).replace(
-        "postgresql", "postgresql+psycopg"
-    )
+    connection_string = str(settings.TEST_DATABASE_URL)
+    is_sqlite = connection_string.startswith("sqlite")
+
+    if not is_sqlite:
+        connection_string = connection_string.replace("postgresql", "postgresql+psycopg")
+        connect_args = {"sslmode": "require"}
+    else:
+        connect_args = {"check_same_thread": False}
+
     engine = create_engine(
-        connection_string, connect_args={"sslmode": "require"}, pool_recycle=300
+        connection_string, connect_args=connect_args, pool_recycle=300
     )
     SQLModel.metadata.create_all(engine)
     yield engine

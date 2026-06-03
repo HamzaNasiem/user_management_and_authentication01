@@ -1,12 +1,6 @@
-// import {
-//   BanknotesIcon,
-//   ClockIcon,
-//   UserGroupIcon,
-//   InboxIcon,
-// } from '@heroicons/react/24/outline';
 import { BanknoteIcon, ClockIcon, Users, InboxIcon } from 'lucide-react';
 import { lusitana } from '../../ui/fonts';
-// import { fetchCardData } from '@/src/app/admin/lib/data';
+import placeholderData from '@/src/components/admin/lib/placeholder-data';
 
 const iconMap = {
   collected: BanknoteIcon,
@@ -16,16 +10,19 @@ const iconMap = {
 };
 
 export default async function CardWrapper() {
-  // const {
-  //   totalPaidInvoices,
-  //   totalPendingInvoices,
-  //   numberOfInvoices,
-  //   numberOfCustomers,
-  // } = await fetchCardData();
+  const totalPaidInvoices = '$' + (placeholderData.invoices
+    .filter((inv) => inv.status === 'paid')
+    .reduce((sum, inv) => sum + inv.amount, 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const totalPendingInvoices = '$' + (placeholderData.invoices
+    .filter((inv) => inv.status === 'pending')
+    .reduce((sum, inv) => sum + inv.amount, 0) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const numberOfInvoices = placeholderData.invoices.length;
+  const numberOfCustomers = placeholderData.customers.length;
+
   return (
     <>
-      {/* NOTE: comment in this code when you get to this point in the course 
-
       <Card title="Collected" value={totalPaidInvoices} type="collected" />
       <Card title="Pending" value={totalPendingInvoices} type="pending" />
       <Card title="Total Invoices" value={numberOfInvoices} type="invoices" />
@@ -33,7 +30,7 @@ export default async function CardWrapper() {
         title="Total Customers"
         value={numberOfCustomers}
         type="customers"
-      /> */}
+      />
     </>
   );
 }
@@ -50,7 +47,7 @@ export function Card({
   const Icon = iconMap[type];
 
   return (
-    <div className="rounded-xl bg-gray-50 p-2 shadow-sm">
+    <div className="rounded-xl bg-gray-50 p-2 shadow-sm border">
       <div className="flex p-4">
         {Icon ? <Icon className="h-5 w-5 text-gray-700" /> : null}
         <h3 className="ml-2 text-sm font-medium">{title}</h3>

@@ -6,13 +6,14 @@ from app.models.user import User
 from sqlmodel import Session, select
 from app.database import get_session
 from app.services.whatsapp_message import send_whatsapp_message
-from app.schemas.user import MessageResponse
+from app.schemas.user import MessageResponse, RequestOtpRequest, VerifyOtpRequest
 from app.services.email_message import send_otp_email
 
 auth_router = APIRouter()
 
 @auth_router.post("/request-otp", response_model=MessageResponse)
-async def request_otp(phone: str, session: Session = Depends(get_session)):
+async def request_otp(payload: RequestOtpRequest, session: Session = Depends(get_session)):
+    phone = payload.phone
     user: User = session.exec(select(User).where(User.phone == phone)).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found with this phone number")
@@ -28,7 +29,11 @@ async def request_otp(phone: str, session: Session = Depends(get_session)):
     return {"message": "OTP sent successfully"}
 
 @auth_router.post("/verify-otp-update-password", response_model=MessageResponse)
-async def verify_otp_and_update_password(phone: str, otp: str, new_password: str, session: Session = Depends(get_session)):
+async def verify_otp_and_update_password(payload: VerifyOtpRequest, session: Session = Depends(get_session)):
+    phone = payload.phone
+    otp = payload.otp
+    new_password = payload.new_password
+
     user = session.exec(select(User).where(User.phone == phone)).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found with this phone number")

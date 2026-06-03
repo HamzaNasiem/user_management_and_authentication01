@@ -11,6 +11,7 @@ from app.services.whatsapp_message import create_and_send_magic_link
 from app.database import get_session
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
+from jose.exceptions import ExpiredSignatureError
 from app.settings import SECRET_KEY, ALGORITHM
 from app.models.verification_token import VerificationToken, VerificationTokenType
 from app.services.email_message import send_user_verifies_success_email
@@ -35,9 +36,9 @@ async def verify_user(token: str, request: Request, session: Session = Depends(g
     # Decode the original token to validate expiration and content
     try:
         payload = jwt.decode(verification_token.token_value, SECRET_KEY, algorithms=[ALGORITHM])
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise HTTPException(status_code=400, detail="Verification link has expired")
-    except jwt.JWTError:
+    except JWTError:
         raise HTTPException(status_code=400, detail="Invalid token")
 
     # Find the user associated with this verification token

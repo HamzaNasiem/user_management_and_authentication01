@@ -10,10 +10,14 @@ def send_email(email, subject, body):
     smtp_port = settings.SMTP_PORT
     smtp_user = settings.SMTP_USER
     smtp_password = settings.SMTP_PASSWORD
-    smpt_sender = settings.SMTP_SENDER
+    smtp_sender = settings.SMTP_SENDER
+
+    if not smtp_server or "dummy" in smtp_server or "localhost" in smtp_server or smtp_server == "smtp.example.com":
+        print(f"MOCK Email to {email}: {subject}")
+        return {"status": "success", "detail": "Mock email sent successfully"}
 
     msg = MIMEMultipart()
-    msg['From'] = smpt_sender
+    msg['From'] = smtp_sender
     msg['To'] = email
     msg['Subject'] = subject
     msg.attach(MIMEText(body, 'html'))

@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from app.router.user import user_router
 from app.router.student_router import student_router
 from app.router.oauth_router import oauth_router
@@ -33,6 +35,34 @@ app = FastAPI(lifespan=lifespan, title="Panaversity User Management and Authenti
             }
         ]
     ) 
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    try:
+        body = await request.body()
+        body_str = body.decode("utf-8")
+    except Exception:
+        body_str = "unable to read body"
+    
+    # Sanitize pydantic validation errors so they are JSON serializable
+    sanitized_errors = []
+    for error in exc.errors():
+        error_copy = dict(error)
+        if "ctx" in error_copy:
+            ctx_copy = {}
+            for k, v in error_copy["ctx"].items():
+                if isinstance(v, Exception):
+                    ctx_copy[k] = str(v)
+                else:
+                    ctx_copy[k] = str(v)
+            error_copy["ctx"] = ctx_copy
+        sanitized_errors.append(error_copy)
+
+    print(f"Validation Error: {sanitized_errors} for body: {body_str}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": sanitized_errors, "body": body_str}
+    )
 
 origins = [
     "http://localhost:3000",

@@ -22,7 +22,7 @@ function UpdatePassword() {
     const router = useRouter();
     const [error, setError] = useState<string | undefined>("");
     const [success, setSuccess] = useState<string | undefined>("")
-    const [phone, setPhone] = useState<string | undefined>("")
+    const [phone, setPhone] = useState<string>("")
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
     const form = useForm<z.infer<typeof UpdatePasswordSchema>>({

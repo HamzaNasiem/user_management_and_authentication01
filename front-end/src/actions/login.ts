@@ -45,8 +45,9 @@ export const login = async (
 
     const userData = await response.json();
     
-    // Include the token expiration time in seconds and milliseconds
-    const expiresInMilliseconds = userData.expires_in * 1000;
+    // Include the token expiration time in seconds and milliseconds (defaulting to 30 minutes)
+    const expiresInSeconds = userData.expires_in || 1800;
+    const expiresInMilliseconds = expiresInSeconds * 1000;
 
     const updatedUserData = {
       ...userData,

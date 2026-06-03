@@ -1,32 +1,50 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { adminAuth, auth } from "./auth";
 
 export async function middleware(req: NextRequest) {
-  // Define protected routes
   const protectedRoutes = ["/dashboard"];
   const adminProtectedRoutes = ["/admin/dashboard"];
 
-  // Check if the current route is protected
   const isProtectedRoute = protectedRoutes.some(route => req.nextUrl.pathname.startsWith(route));
   const isAdminProtectedRoute = adminProtectedRoutes.some(route => req.nextUrl.pathname.startsWith(route));
 
-  // If it's a protected route, check for the session
-  if (isProtectedRoute) {
-    const session = await auth();
-    if (!session) {
-      // If no token, redirect to sign-in page
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
-  }
-  if (isAdminProtectedRoute) {
-    const session = await adminAuth();
-    if (!session) {
-      // If no token, redirect to sign-in page
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+  // Get user_data from cookies directly using Edge-compatible API
+  const userDataCookie = req.cookies.get("user_data")?.value;
+  let session = null;
+  if (userDataCookie) {
+    try {
+      session = JSON.parse(userDataCookie);
+    } catch (e) {
+      session = null;
     }
   }
 
-  // Allow access to non-protected routes
+  if (isProtectedRoute) {
+    if (!session || !session.access_token) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+  }
+
+  if (isAdminProtectedRoute) {
+    if (!session || !session.access_token) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+    const token = session.access_token;
+    try {
+      const response = await fetch(`${process.env.BACKEND_AUTH_SERVER_URL}/api/v1/user/admin`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+      if (!response.ok) {
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+    } catch (error) {
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
+  }
+
   return NextResponse.next();
 }

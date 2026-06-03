@@ -23,6 +23,10 @@ def generate_hash_id(data: str, length=8):
 
 def send_whatsapp_message(number: str, message: str):
     api_url = WHATSAPP_API_URL
+    if not api_url or "dummy" in api_url or "localhost" in api_url:
+        print(f"MOCK WhatsApp to {number}: {message}")
+        return {"status": "success", "detail": "Mock WhatsApp message sent successfully"}
+
     payload = {
         "number": number,
         "message": message,

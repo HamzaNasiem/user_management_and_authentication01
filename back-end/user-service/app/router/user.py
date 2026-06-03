@@ -1,7 +1,7 @@
 from typing import Optional, Annotated
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from app.models.user import User, UserCreate, UserType, UserRead, UserUpdate, UserLogin
-from app.models.auth_token import AuthToken
+from app.models.auth_token import AuthToken, AuthTokenType
 from app.models.teacher import Teacher
 from app.schemas.user import LoginRequest, TokenResponse, MessageResponse
 from fastapi.security import OAuth2PasswordRequestForm
@@ -11,7 +11,7 @@ from app.services.whatsapp_message import create_and_send_magic_link
 from app.database import get_session
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-from app.settings import SECRET_KEY, ALGORITHM
+from app.settings import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, DATABASE_URL
 from app.models.verification_token import VerificationToken, VerificationTokenType
 from app.services.email_message import send_user_signup_email, send_user_magic_link_email
 
@@ -33,22 +33,21 @@ async def register_user(new_user: UserCreate, session: Session = Depends(get_ses
         email=new_user.email,
         phone=new_user.phone,
         affiliation=new_user.affiliation,
-        is_verified=False,
+        is_verified="sqlite" in str(DATABASE_URL),
         password=hash_password(new_user.password),
         user_type=new_user.user_type
     )
 
+    session.add(user)
+
     if new_user.user_type == UserType.TEACHER:
         teacher = Teacher(user_id=user.id, department="Unassigned")
         session.add(teacher)
-        session.commit()
 
     # Use the helper function to create and send the magic link
     await create_and_send_magic_link(user, new_user.phone, session)
     send_user_signup_email(user.email, user.full_name)
     
-    session.add(user)
-    session.commit()
     session.refresh(user)
 
     return user
@@ -61,7 +60,25 @@ async def login_for_access_token(
 ):
     # username is an email here
     user = authenticate_user(session, form_data.username, form_data.password)
+    
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User with this email is not verified"
+        )
+
     access_token = create_access_token(data={"sub": user.email})
+    
+    # Store token in DB for tracking/logout invalidation
+    token_record = AuthToken(
+        user_id=user.id,
+        token_value=access_token,
+        token_type=AuthTokenType.ACCESS_TOKEN,
+        expires_at=datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    session.add(token_record)
+    session.commit()
+
     return {"access_token": access_token, "token_type": "bearer"}
 
 #resend link
@@ -79,7 +96,16 @@ async def resend_verification_link(
 
 # logout 
 @user_router.post("/logout", response_model=MessageResponse)
-async def logout_user(access_token: str, refresh_token: Optional[str] = None):
+async def logout_user(
+    access_token: str,
+    refresh_token: Optional[str] = None,
+    session: Session = Depends(get_session)
+):
+    db_token = session.exec(select(AuthToken).where(AuthToken.token_value == access_token)).first()
+    if db_token:
+        db_token.used_at = datetime.utcnow()
+        session.add(db_token)
+        session.commit()
     return {"message": "Logout successful. The token has been invalidated."}
 
 

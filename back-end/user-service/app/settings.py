@@ -7,6 +7,7 @@ except FileNotFoundError:
     config = Config()
 
 DATABASE_URL = config("DATABASE_URL", cast=str)
+TEST_DATABASE_URL = config("TEST_DATABASE_URL", cast=str, default="sqlite:///test_user_management.db")
 SECRET_KEY = config("SECRET_KEY", cast=str)
 ALGORITHM = config("ALGORITHM", cast=str, default="HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = config(
